@@ -1,0 +1,25 @@
+services:
+  backend:
+    build: ./backend
+    container_name: cafe-backend
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:h2:file:/app/data/cafedb
+      JWT_SECRET: ${JWT_SECRET:-cafe-dev-secret-key-change-me-in-production-0123456789abcdef}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@cafe.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+    volumes:
+      - h2-data:/app/data
+
+  frontend:
+    build: ./frontend
+    container_name: cafe-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  h2-data:
