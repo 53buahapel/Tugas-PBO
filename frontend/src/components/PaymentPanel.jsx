@@ -1,5 +1,19 @@
 import { useState } from 'react'
+import { Banknote, Wallet } from 'lucide-react'
+import { toast } from 'sonner'
+
 import { api, rupiah } from '../api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 const PROVIDERS = ['DANA', 'OVO', 'GOPAY', 'SHOPEEPAY']
 
@@ -8,91 +22,87 @@ export default function PaymentPanel({ order, onPaid }) {
   const [cashGiven, setCashGiven] = useState('')
   const [provider, setProvider] = useState('DANA')
   const [accountNumber, setAccountNumber] = useState('')
-  const [error, setError] = useState('')
-  const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
 
   async function pay(e) {
     e.preventDefault()
-    setError('')
     setBusy(true)
     try {
       const payment =
         method === 'CASH'
           ? await api.payCash(order.orderId, Number(cashGiven))
           : await api.payEwallet(order.orderId, { provider, accountNumber })
-      setResult(payment)
+      toast.success(
+        `Pembayaran ${payment.method} berhasil` +
+          (payment.change > 0 ? ` — kembalian ${rupiah(payment.change)}` : ''),
+      )
       onPaid?.(payment)
     } catch (err) {
-      setError(err.message)
+      toast.error(err.message)
     } finally {
       setBusy(false)
     }
   }
 
-  if (result) {
-    return (
-      <div className="success">
-        Pembayaran {result.method} berhasil — {rupiah(result.amount)}
-        {result.change != null && result.change > 0 && <> — kembalian {rupiah(result.change)}</>}
-      </div>
-    )
-  }
-
   return (
-    <form className="pay-panel" onSubmit={pay}>
-      <div className="row" style={{ marginBottom: 10 }}>
-        <strong>Bayar {rupiah(order.total)}</strong>
-        <button
-          type="button"
-          className="ghost"
-          style={method === 'CASH' ? { background: '#5c3d1e', color: '#fff' } : {}}
-          onClick={() => setMethod('CASH')}
-        >
-          Cash
-        </button>
-        <button
-          type="button"
-          className="ghost"
-          style={method === 'EWALLET' ? { background: '#5c3d1e', color: '#fff' } : {}}
-          onClick={() => setMethod('EWALLET')}
-        >
-          E-Wallet
-        </button>
+    <form onSubmit={pay} className="flex flex-col gap-4 border-t pt-4">
+      <div className="flex items-center justify-between">
+        <span className="text-muted-foreground text-sm">Total bayar</span>
+        <span className="text-lg font-semibold">{rupiah(order.total)}</span>
       </div>
-      {error && <div className="error">{error}</div>}
+      <Tabs value={method} onValueChange={setMethod}>
+        <TabsList className="w-full">
+          <TabsTrigger value="CASH" className="flex-1">
+            <Banknote /> Cash
+          </TabsTrigger>
+          <TabsTrigger value="EWALLET" className="flex-1">
+            <Wallet /> E-Wallet
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
       {method === 'CASH' ? (
-        <div className="row">
-          <input
+        <div className="flex flex-col gap-1.5">
+          <Label>Uang diterima</Label>
+          <Input
             type="number"
             min="1"
-            placeholder={`Uang tunai (min ${rupiah(order.total)})`}
+            placeholder={`Minimal ${rupiah(order.total)}`}
             value={cashGiven}
             onChange={(e) => setCashGiven(e.target.value)}
             required
           />
-          <button className="primary" type="submit" disabled={busy}>
-            Bayar
-          </button>
         </div>
       ) : (
-        <div className="row">
-          <select value={provider} onChange={(e) => setProvider(e.target.value)}>
-            {PROVIDERS.map((p) => (
-              <option key={p}>{p}</option>
-            ))}
-          </select>
-          <input
-            placeholder="No. akun (10-15 digit)"
-            value={accountNumber}
-            onChange={(e) => setAccountNumber(e.target.value)}
-            required
-          />
-          <button className="primary" type="submit" disabled={busy}>
-            Bayar
-          </button>
+        <div className="flex gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label>Provider</Label>
+            <Select value={provider} onValueChange={setProvider}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PROVIDERS.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-1 flex-col gap-1.5">
+            <Label>No. akun</Label>
+            <Input
+              placeholder="10-15 digit"
+              value={accountNumber}
+              onChange={(e) => setAccountNumber(e.target.value)}
+              required
+            />
+          </div>
         </div>
       )}
+      <Button type="submit" disabled={busy} className="w-full">
+        Bayar {rupiah(order.total)}
+      </Button>
     </form>
   )
 }

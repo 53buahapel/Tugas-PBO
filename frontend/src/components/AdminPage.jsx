@@ -1,10 +1,23 @@
 import { useEffect, useState } from 'react'
+import { Check, CookingPot } from 'lucide-react'
+import { toast } from 'sonner'
+
 import { api, rupiah } from '../api'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import StatusBadge from './StatusBadge'
 
 export default function AdminPage({ refreshKey }) {
   const [stats, setStats] = useState(null)
   const [orders, setOrders] = useState([])
-  const [error, setError] = useState('')
 
   async function load() {
     try {
@@ -12,7 +25,7 @@ export default function AdminPage({ refreshKey }) {
       setStats(d)
       setOrders(o)
     } catch (err) {
-      setError(err.message)
+      toast.error(err.message)
     }
   }
 
@@ -20,69 +33,102 @@ export default function AdminPage({ refreshKey }) {
     load()
   }, [refreshKey])
 
-  async function act(fn, orderId) {
+  async function act(fn, orderId, msg) {
     try {
       await fn(orderId)
+      toast.success(msg)
       load()
     } catch (err) {
-      setError(err.message)
+      toast.error(err.message)
     }
   }
 
+  const statCards = stats
+    ? [
+        ['Total Order', stats.totalOrders],
+        ['Pending', stats.pendingOrders],
+        ['Paid', stats.paidOrders],
+        ['Processing', stats.processingOrders],
+        ['Completed', stats.completedOrders],
+        ['Revenue', rupiah(stats.totalRevenue)],
+      ]
+    : []
+
   return (
-    <div>
-      {error && <div className="error">{error}</div>}
-      {stats && (
-        <div className="stats">
-          <div className="stat"><div className="num">{stats.totalOrders}</div><div className="lbl">Total</div></div>
-          <div className="stat"><div className="num">{stats.pendingOrders}</div><div className="lbl">Pending</div></div>
-          <div className="stat"><div className="num">{stats.paidOrders}</div><div className="lbl">Paid</div></div>
-          <div className="stat"><div className="num">{stats.processingOrders}</div><div className="lbl">Processing</div></div>
-          <div className="stat"><div className="num">{stats.completedOrders}</div><div className="lbl">Completed</div></div>
-          <div className="stat"><div className="num">{rupiah(stats.totalRevenue)}</div><div className="lbl">Revenue</div></div>
-        </div>
-      )}
-      <div className="card">
-        <h2>Semua Order</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Order</th>
-              <th>Customer</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((o) => (
-              <tr key={o.orderId}>
-                <td>{o.orderId}</td>
-                <td>{o.customerName}</td>
-                <td>{o.items.map((i) => `${i.quantity}× ${i.itemName}`).join(', ')}</td>
-                <td>{rupiah(o.total)}</td>
-                <td><span className={`badge ${o.status}`}>{o.status}</span></td>
-                <td>
-                  {o.status === 'PAID' && (
-                    <button className="ghost" onClick={() => act(api.markProcessing, o.orderId)}>
-                      Proses
-                    </button>
-                  )}
-                  {o.status === 'PROCESSING' && (
-                    <button className="primary" onClick={() => act(api.markCompleted, o.orderId)}>
-                      Selesai
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {orders.length === 0 && (
-              <tr><td colSpan={6} className="muted">Belum ada order.</td></tr>
-            )}
-          </tbody>
-        </table>
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {statCards.map(([label, value]) => (
+          <Card key={label}>
+            <CardContent className="flex flex-col gap-1">
+              <span className="text-muted-foreground text-xs tracking-wide uppercase">
+                {label}
+              </span>
+              <span className="text-xl font-semibold">{value}</span>
+            </CardContent>
+          </Card>
+        ))}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Semua Order</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Items</TableHead>
+                <TableHead>Total</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orders.map((o) => (
+                <TableRow key={o.orderId}>
+                  <TableCell className="font-mono text-xs">{o.orderId}</TableCell>
+                  <TableCell>{o.customerName}</TableCell>
+                  <TableCell className="text-muted-foreground max-w-48 truncate">
+                    {o.items.map((i) => `${i.quantity}× ${i.itemName}`).join(', ')}
+                  </TableCell>
+                  <TableCell>{rupiah(o.total)}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={o.status} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {o.status === 'PAID' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => act(api.markProcessing, o.orderId, 'Order diproses')}
+                      >
+                        <CookingPot /> Proses
+                      </Button>
+                    )}
+                    {o.status === 'PROCESSING' && (
+                      <Button
+                        size="sm"
+                        onClick={() => act(api.markCompleted, o.orderId, 'Order selesai')}
+                      >
+                        <Check /> Selesai
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {orders.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
+                    Belum ada order masuk.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }
