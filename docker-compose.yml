@@ -2,8 +2,9 @@ services:
   backend:
     build: ./backend
     container_name: cafe-backend
-    ports:
-      - "8080:8080"
+    # tidak di-publish ke host — hanya bisa diakses via nginx (frontend) di :5173
+    expose:
+      - "8080"
     environment:
       DB_URL: jdbc:h2:file:/app/data/cafedb
       JWT_SECRET: ${JWT_SECRET:-cafe-dev-secret-key-change-me-in-production-0123456789abcdef}
