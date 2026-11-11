@@ -1,5 +1,18 @@
 import { useState } from 'react'
+import { Coffee } from 'lucide-react'
+
 import { api } from '../api'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export default function AuthPage({ onLogin }) {
   const [mode, setMode] = useState('login')
@@ -27,58 +40,70 @@ export default function AuthPage({ onLogin }) {
   }
 
   return (
-    <div className="auth-box">
-      <div className="card">
-        <h1>Cafe Ordering</h1>
-        <p className="muted">
-          {mode === 'login' ? 'Masuk ke akun kamu' : 'Daftar akun customer baru'}
-        </p>
-        {error && <div className="error">{error}</div>}
-        <form onSubmit={submit}>
-          {mode === 'register' && (
-            <>
-              <label>Nama</label>
-              <input value={form.name} onChange={set('name')} required />
-            </>
-          )}
-          <label>Email</label>
-          <input type="email" value={form.email} onChange={set('email')} required />
-          <label>Password</label>
-          <input
-            type="password"
-            value={form.password}
-            onChange={set('password')}
-            required
-            minLength={6}
-          />
-          {mode === 'register' && (
-            <>
-              <label>No. HP</label>
-              <input value={form.phone} onChange={set('phone')} required />
-            </>
-          )}
-          <div style={{ marginTop: 16 }}>
-            <button className="primary" type="submit" disabled={busy}>
-              {mode === 'login' ? 'Login' : 'Register'}
-            </button>
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="items-center text-center">
+          <div className="bg-primary text-primary-foreground mb-2 flex size-11 items-center justify-center rounded-xl">
+            <Coffee className="size-5" />
           </div>
-        </form>
-        <p className="muted" style={{ marginTop: 16 }}>
-          {mode === 'login' ? 'Belum punya akun? ' : 'Sudah punya akun? '}
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              setMode(mode === 'login' ? 'register' : 'login')
-            }}
-          >
-            {mode === 'login' ? 'Register' : 'Login'}
-          </a>
-        </p>
-        <p className="muted" style={{ fontSize: '0.75rem' }}>
-          Admin demo: admin@cafe.local / admin123
-        </p>
-      </div>
+          <CardTitle className="text-xl">Cafe Ordering</CardTitle>
+          <CardDescription>Sistem pemesanan cafe</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={mode} onValueChange={setMode} className="mb-5">
+            <TabsList className="w-full">
+              <TabsTrigger value="login" className="flex-1">
+                Login
+              </TabsTrigger>
+              <TabsTrigger value="register" className="flex-1">
+                Register
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <form onSubmit={submit} className="flex flex-col gap-4">
+            {mode === 'register' && (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="name">Nama</Label>
+                <Input id="name" value={form.name} onChange={set('name')} required />
+              </div>
+            )}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={set('email')}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={form.password}
+                onChange={set('password')}
+                required
+                minLength={6}
+              />
+            </div>
+            {mode === 'register' && (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="phone">No. HP</Label>
+                <Input id="phone" value={form.phone} onChange={set('phone')} required />
+              </div>
+            )}
+            {error && <p className="text-destructive text-sm">{error}</p>}
+            <Button type="submit" disabled={busy} className="w-full">
+              {mode === 'login' ? 'Masuk' : 'Daftar'}
+            </Button>
+            <p className="text-muted-foreground text-center text-xs">
+              Demo admin: admin@cafe.local / admin123
+            </p>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

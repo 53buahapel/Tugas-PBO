@@ -15,6 +15,14 @@ prinsip OOP: inheritance, encapsulation, abstraction, dan polymorphism.
 
 ## Menjalankan Aplikasi
 
+Via Docker dari root repo (backend + frontend sekaligus):
+
+```bash
+docker compose up --build
+```
+
+Atau backend saja:
+
 ```bash
 cd backend
 ./mvnw spring-boot:run

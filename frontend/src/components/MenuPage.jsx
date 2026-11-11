@@ -1,20 +1,56 @@
 import { useEffect, useState } from 'react'
-import { api, rupiah } from '../api'
+import {
+  CakeSlice,
+  Coffee,
+  Pencil,
+  Plus,
+  Trash2,
+  UtensilsCrossed,
+} from 'lucide-react'
+import { toast } from 'sonner'
 
-const CATEGORIES = ['ALL', 'FOOD', 'DRINK', 'DESSERT']
+import { api, rupiah } from '../api'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import ConfirmDialog from './ConfirmDialog'
+
+const CATEGORY_ICON = {
+  FOOD: UtensilsCrossed,
+  DRINK: Coffee,
+  DESSERT: CakeSlice,
+}
 
 export default function MenuPage({ isAdmin, cart, onAdd, refreshKey }) {
   const [items, setItems] = useState([])
   const [filter, setFilter] = useState('ALL')
-  const [error, setError] = useState('')
+  const [addOpen, setAddOpen] = useState(false)
   const [newItem, setNewItem] = useState({ name: '', price: '', category: 'FOOD' })
-  const [showForm, setShowForm] = useState(false)
 
   async function load() {
     try {
       setItems(await api.menu())
     } catch (err) {
-      setError(err.message)
+      toast.error(err.message)
     }
   }
 
@@ -22,133 +58,222 @@ export default function MenuPage({ isAdmin, cart, onAdd, refreshKey }) {
     load()
   }, [refreshKey])
 
-  async function toggleAvailable(item) {
+  async function run(fn, successMsg) {
     try {
-      await api.setAvailability(item.id, !item.available)
+      await fn()
+      if (successMsg) toast.success(successMsg)
       load()
     } catch (err) {
-      setError(err.message)
-    }
-  }
-
-  async function changePrice(item) {
-    const price = Number(prompt(`Harga baru untuk ${item.name}:`, item.price))
-    if (!price || price <= 0) return
-    try {
-      await api.updatePrice(item.id, price)
-      load()
-    } catch (err) {
-      setError(err.message)
-    }
-  }
-
-  async function removeItem(item) {
-    if (!confirm(`Hapus ${item.name} dari menu?`)) return
-    try {
-      await api.deleteMenuItem(item.id)
-      load()
-    } catch (err) {
-      setError(err.message)
-    }
-  }
-
-  async function addItem(e) {
-    e.preventDefault()
-    try {
-      await api.createMenuItem({ ...newItem, price: Number(newItem.price), available: true })
-      setNewItem({ name: '', price: '', category: 'FOOD' })
-      setShowForm(false)
-      load()
-    } catch (err) {
-      setError(err.message)
+      toast.error(err.message)
     }
   }
 
   const visible = items.filter((i) => filter === 'ALL' || i.category === filter)
 
   return (
-    <div>
-      {error && <div className="error">{error}</div>}
-      <div className="row between" style={{ marginBottom: 12 }}>
-        <div className="row">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c}
-              className="ghost"
-              style={filter === c ? { background: '#5c3d1e', color: '#fff' } : {}}
-              onClick={() => setFilter(c)}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <Tabs value={filter} onValueChange={setFilter}>
+          <TabsList>
+            {['ALL', 'FOOD', 'DRINK', 'DESSERT'].map((c) => (
+              <TabsTrigger key={c} value={c}>
+                {c === 'ALL' ? 'Semua' : c.charAt(0) + c.slice(1).toLowerCase()}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
         {isAdmin && (
-          <button className="primary" onClick={() => setShowForm(!showForm)}>
-            + Item
-          </button>
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus /> Item
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Tambah Menu Item</DialogTitle>
+                <DialogDescription>Item baru langsung tersedia.</DialogDescription>
+              </DialogHeader>
+              <form
+                className="flex flex-col gap-4"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  run(
+                    () =>
+                      api.createMenuItem({
+                        ...newItem,
+                        price: Number(newItem.price),
+                        available: true,
+                      }),
+                    'Item ditambahkan',
+                  ).then(() => setAddOpen(false))
+                  setNewItem({ name: '', price: '', category: 'FOOD' })
+                }}
+              >
+                <div className="flex flex-col gap-1.5">
+                  <Label>Nama</Label>
+                  <Input
+                    value={newItem.name}
+                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex flex-1 flex-col gap-1.5">
+                    <Label>Harga</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={newItem.price}
+                      onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="flex flex-1 flex-col gap-1.5">
+                    <Label>Kategori</Label>
+                    <Select
+                      value={newItem.category}
+                      onValueChange={(v) => setNewItem({ ...newItem, category: v })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="FOOD">Food</SelectItem>
+                        <SelectItem value="DRINK">Drink</SelectItem>
+                        <SelectItem value="DESSERT">Dessert</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit">Tambah</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
 
-      {showForm && isAdmin && (
-        <form className="card" onSubmit={addItem}>
-          <div className="row">
-            <input
-              placeholder="Nama item"
-              value={newItem.name}
-              onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-              required
-            />
-            <input
-              placeholder="Harga"
-              type="number"
-              min="1"
-              value={newItem.price}
-              onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
-              required
-            />
-            <select
-              value={newItem.category}
-              onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-            >
-              <option>FOOD</option>
-              <option>DRINK</option>
-              <option>DESSERT</option>
-            </select>
-            <button className="primary" type="submit">
-              Tambah
-            </button>
-          </div>
-        </form>
-      )}
-
-      <div className="grid">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {visible.map((item) => (
-          <div key={item.id} className={`card menu-card ${item.available ? '' : 'unavailable'}`}>
-            <span className="cat">{item.category}</span>
-            <h3>{item.name}</h3>
-            <div className="price">{rupiah(item.price)}</div>
-            {isAdmin ? (
-              <div className="row">
-                <button className="ghost" onClick={() => toggleAvailable(item)}>
-                  {item.available ? 'Nonaktifkan' : 'Aktifkan'}
-                </button>
-                <button className="ghost" onClick={() => changePrice(item)}>
-                  Harga
-                </button>
-                <button className="danger" onClick={() => removeItem(item)}>
-                  Hapus
-                </button>
-              </div>
-            ) : item.available ? (
-              <button className="primary" onClick={() => onAdd(item)}>
-                + Keranjang {cart[item.id] ? `(${cart[item.id].quantity})` : ''}
-              </button>
-            ) : (
-              <span className="muted">Tidak tersedia</span>
-            )}
-          </div>
+          <MenuCard
+            key={item.id}
+            item={item}
+            isAdmin={isAdmin}
+            cartQty={cart[item.id]?.quantity || 0}
+            onAdd={() => onAdd(item)}
+            onRefresh={load}
+            onError={(msg) => toast.error(msg)}
+          />
         ))}
       </div>
+      {visible.length === 0 && (
+        <p className="text-muted-foreground py-10 text-center text-sm">
+          Tidak ada item pada kategori ini.
+        </p>
+      )}
     </div>
+  )
+}
+
+function MenuCard({ item, isAdmin, cartQty, onAdd, onRefresh, onError }) {
+  const [priceOpen, setPriceOpen] = useState(false)
+  const [price, setPrice] = useState(item.price)
+  const Icon = CATEGORY_ICON[item.category] ?? Coffee
+
+  async function run(fn, msg) {
+    try {
+      await fn()
+      if (msg) toast.success(msg)
+      onRefresh()
+    } catch (err) {
+      onError(err.message)
+    }
+  }
+
+  return (
+    <Card className={item.available ? '' : 'opacity-60'}>
+      <CardContent className="flex flex-col gap-3">
+        <div className="flex items-start justify-between">
+          <div className="bg-secondary text-secondary-foreground flex size-9 items-center justify-center rounded-lg">
+            <Icon className="size-4" />
+          </div>
+          {!item.available && <Badge variant="outline">Habis</Badge>}
+        </div>
+        <div>
+          <p className="font-medium">{item.name}</p>
+          <p className="text-muted-foreground text-xs tracking-wide uppercase">
+            {item.category}
+          </p>
+        </div>
+        <p className="text-lg font-semibold">{rupiah(item.price)}</p>
+        {isAdmin ? (
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                run(
+                  () => api.setAvailability(item.id, !item.available),
+                  item.available ? 'Item dinonaktifkan' : 'Item diaktifkan',
+                )
+              }
+            >
+              {item.available ? 'Nonaktifkan' : 'Aktifkan'}
+            </Button>
+            <Dialog open={priceOpen} onOpenChange={setPriceOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={() => setPrice(item.price)}>
+                  <Pencil />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-xs">
+                <DialogHeader>
+                  <DialogTitle>Ubah Harga</DialogTitle>
+                  <DialogDescription>{item.name}</DialogDescription>
+                </DialogHeader>
+                <form
+                  className="flex flex-col gap-4"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    run(() => api.updatePrice(item.id, Number(price)), 'Harga diubah').then(
+                      () => setPriceOpen(false),
+                    )
+                  }}
+                >
+                  <Input
+                    type="number"
+                    min="1"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    required
+                  />
+                  <DialogFooter>
+                    <Button type="submit">Simpan</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <ConfirmDialog
+              trigger={
+                <Button variant="ghost" size="icon" className="text-destructive">
+                  <Trash2 />
+                </Button>
+              }
+              title="Hapus item?"
+              description={`${item.name} akan dihapus dari menu. Order yang sudah ada tidak terpengaruh.`}
+              onConfirm={() => run(() => api.deleteMenuItem(item.id), 'Item dihapus')}
+            />
+          </div>
+        ) : (
+          item.available && (
+            <Button variant="secondary" size="sm" onClick={onAdd}>
+              <Plus /> Tambah{cartQty > 0 ? ` (${cartQty})` : ''}
+            </Button>
+          )
+        )}
+      </CardContent>
+    </Card>
   )
 }
