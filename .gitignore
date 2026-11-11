@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+
+# H2 database files
+data/
+*.mv.db
+*.trace.db

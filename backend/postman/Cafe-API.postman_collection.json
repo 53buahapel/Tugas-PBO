@@ -1,0 +1,274 @@
+{
+  "info": {
+    "name": "Cafe Ordering System API",
+    "description": "REST API Tugas PBO. Set baseUrl variable; login/register requests auto-fill the token variable.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "orderId", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Customer",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": [
+              "var d = pm.response.json();",
+              "if (d.data && d.data.token) pm.collectionVariables.set('token', d.data.token);"
+            ]}
+          }],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"08123456789\"\n}" }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": [
+              "var d = pm.response.json();",
+              "if (d.data && d.data.token) pm.collectionVariables.set('token', d.data.token);"
+            ]}
+          }],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}" }
+          }
+        },
+        {
+          "name": "Login Admin (seeded)",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": [
+              "var d = pm.response.json();",
+              "if (d.data && d.data.token) pm.collectionVariables.set('adminToken', d.data.token);"
+            ]}
+          }],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@cafe.local\",\n  \"password\": \"admin123\"\n}" }
+          }
+        },
+        {
+          "name": "Register Admin (admin only)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/admin/register",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Second Admin\",\n  \"email\": \"admin2@cafe.local\",\n  \"password\": \"admin123\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Menu",
+      "item": [
+        {
+          "name": "Get All Menu Items",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/menu", "auth": { "type": "noauth" } }
+        },
+        {
+          "name": "Get Available Items",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/menu/available", "auth": { "type": "noauth" } }
+        },
+        {
+          "name": "Get Item Detail",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/menu/MENU-001", "auth": { "type": "noauth" } }
+        },
+        {
+          "name": "Get Items by Category",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/menu/category/DRINK", "auth": { "type": "noauth" } }
+        },
+        {
+          "name": "Create Menu Item (admin)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/menu",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Iced Coffee\",\n  \"price\": 18000,\n  \"category\": \"DRINK\",\n  \"available\": true\n}" }
+          }
+        },
+        {
+          "name": "Update Menu Item (admin)",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/menu/MENU-001",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Nasi Goreng Spesial\",\n  \"price\": 26000,\n  \"category\": \"FOOD\",\n  \"available\": true\n}" }
+          }
+        },
+        {
+          "name": "Update Price (admin)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/menu/MENU-001/price",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"price\": 27000\n}" }
+          }
+        },
+        {
+          "name": "Update Availability (admin)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/menu/MENU-001/availability",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"available\": false\n}" }
+          }
+        },
+        {
+          "name": "Delete Menu Item (admin)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/menu/MENU-001",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create Order",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": [
+              "var d = pm.response.json();",
+              "if (d.data && d.data.orderId) pm.collectionVariables.set('orderId', d.data.orderId);"
+            ]}
+          }],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/orders",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    { \"menuItemId\": \"MENU-001\", \"quantity\": 2 },\n    { \"menuItemId\": \"MENU-003\", \"quantity\": 1 }\n  ]\n}" }
+          }
+        },
+        {
+          "name": "Get My Orders",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/orders" }
+        },
+        {
+          "name": "Get Order Detail",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/orders/{{orderId}}" }
+        },
+        {
+          "name": "Get Order Total",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/orders/{{orderId}}/total" }
+        },
+        {
+          "name": "Add Item to Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/orders/{{orderId}}/items",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"menuItemId\": \"MENU-005\",\n  \"quantity\": 1\n}" }
+          }
+        },
+        {
+          "name": "Remove Item from Order",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/orders/{{orderId}}/items/MENU-005"
+          }
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/orders/{{orderId}}/cancel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Pay with Cash",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/orders/{{orderId}}/payments/cash",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"cashGiven\": 100000\n}" }
+          }
+        },
+        {
+          "name": "Pay with E-Wallet",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/orders/{{orderId}}/payments/ewallet",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"provider\": \"DANA\",\n  \"accountNumber\": \"081234567890\"\n}" }
+          }
+        },
+        {
+          "name": "Get Order Payment",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/orders/{{orderId}}/payments" }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get All Orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/admin/orders",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "Mark Order Processing",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/admin/orders/{{orderId}}/processing",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "Mark Order Completed",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/admin/orders/{{orderId}}/complete",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "Dashboard",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/admin/dashboard",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }
+          }
+        }
+      ]
+    }
+  ]
+}
